@@ -9,6 +9,7 @@ from datetime import datetime
 from datetime import date, timedelta
 import datetime as dt
 
+regexForReport = "traffic.light:.?(:large_green_circle:|:large_yellow_circle:|:red_circle:|🔴|🟢|🟡)\ntarget.spend.\(budget\):.?([+-]?([0-9]*[.])?[0-9]+)\nactual.spend:.?([+-]?([0-9]*[.])?[0-9]+)\ntarget.cpa:.?([+-]?([0-9]*[.])?[0-9]+)\nactual.cpa:.?([+-]?([0-9]*[.])?[0-9]+)\n#accounts:.?([+-]?([0-9]*[.])?[0-9]+)\n"
 #getting day of the week
 print(datetime.today().weekday())
 
@@ -29,7 +30,7 @@ averageReplyTime = float(0)
 numMessagesAverage= 0
 
 # init web client
-client = slack_sdk.WebClient(token=YOUR TOKEN)
+client = slack_sdk.WebClient(token='YOUR TOKEN')
 
 ReminderMessage = "Hi team,\nThe bot will collect all the  client statuses tomorrow.\nMake sure every channel is updated with the client status by then.\n\nGuidelines:\n1. Should be in the main channel, NOT a thread.\n2. Should be in this format: 'Client Status: 🟢'"
 
@@ -65,7 +66,7 @@ if DayofWeek==4:
     # client.chat_postMessage(channel="C01RXTCMKLN", text=ReminderMessage)
     pass
 
-if DayofWeek==2:
+if DayofWeek==4:
     # gets channels that we need
     channel_ID_list = []
     channel_NAME_list = []
@@ -73,7 +74,7 @@ if DayofWeek==2:
     print("Found channels are: ")
     for data in client.conversations_list(types=["public_channel", "private_channel "], exclude_archived=True)["channels"]:
         # print(data["name"])
-        if (re.search(r"client-ads-",data["name"])):
+        if (re.search(r"client-",data["name"])):
             channel_ID_list.append(data["id"])
             channel_NAME_list.append(data["name"])
             print(f"CHANNEL:{data['name']} | ID:{data['id']}\n")
@@ -88,6 +89,7 @@ if DayofWeek==2:
     print(channel_NAME_list)
     MessageToBeSent = ""
     for channel in channel_NAME_list:
+        message_list=[]
         print(channel_ID_list[i])
         response = client.conversations_history(
             channel=channel_ID_list[i],
@@ -141,21 +143,47 @@ if DayofWeek==2:
         for message_dumpp in messages_all:
             # print(message_dumpp["text"])
             one_message = message_dumpp["text"].lower()
-            if (re.search(r"client.status.?.?.?:large_green_circle:",one_message)):
-                # print(re.search(r"Hasura",message_dumpp["text"]))
-                messages_needed.append(message_dumpp["text"])
-                flag=1
-                break
-            elif (re.search(r"client.status.?.?.?:large_yellow_circle:",one_message)):
-                # print(re.search(r"Hasura",message_dumpp["text"]))
-                messages_needed.append(message_dumpp["text"])
-                flag=2
-                break
-            elif (re.search(r"client.status.?.?.?:red_circle:",one_message  )):
-                # print(re.search(r"Hasura",message_dumpp["text"]))
-                messages_needed.append(message_dumpp["text"])
-                flag=3
-                break
+            # if (re.search(r"traffic.light:",one_message)):
+            #     print("success")
+            #     messages_needed.append("success")
+            #     break
+            numArr = []
+            if (re.search(r"traffic.light:.?(:large_green_circle:|:large_yellow_circle:|:red_circle:|🔴|🟢|🟡)\ntarget.spend.\(budget\):.?([+-]?([0-9]*[.])?[0-9]+)\nactual.spend:.?([+-]?([0-9]*[.])?[0-9]+)\ntarget.cpa:.?([+-]?([0-9]*[.])?[0-9]+)\nactual.cpa:.?([+-]?([0-9]*[.])?[0-9]+)\n",one_message)):
+                
+                # print(one_message)
+                # print("success")
+                messages_needed.append("success")
+                p = '[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+'
+                if (":red_circle:" in one_message):
+                    numArr.append(":red_circle:")
+                elif (":large_yellow_circle:" in one_message):
+                    numArr.append(":large_yellow_circle:")
+                elif (":red_circle:" in one_message):
+                    numArr.append(":red_circle:")
+                else:
+                    numArr.append("No status found")
+                if re.search(p, one_message) is not None:
+                    for catch in re.finditer(p, one_message):
+                        print(catch[0])
+                        numArr.append(catch[0])
+                
+                print(numArr)
+                
+            # if (re.search(r"client.status.?.?.?:large_green_circle:",one_message)):
+            #     # print(re.search(r"Hasura",message_dumpp["text"]))
+            #     messages_needed.append(message_dumpp["text"])
+            #     flag=1
+            #     break
+            # elif (re.search(r"client.status.?.?.?:large_yellow_circle:",one_message)):
+            #     # print(re.search(r"Hasura",message_dumpp["text"]))
+            #     messages_needed.append(message_dumpp["text"])
+            #     flag=2
+            #     break
+            # elif (re.search(r"client.status.?.?.?:red_circle:",one_message  )):
+            #     # print(re.search(r"Hasura",message_dumpp["text"]))
+            #     messages_needed.append(message_dumpp["text"])
+            #     flag=3
+            #     break
 
             
         print(flag)
@@ -170,11 +198,12 @@ if DayofWeek==2:
         
         #updating to google sheet
         
-        sheet_endpoint = YOUR ENDPOINT
+        #updating to google sheet
+        sheet_endpoint = "YOUR API KEY"
         sheet_inputs = {
-            "forrestGump'sMouth": {
+            "sheet1": {
                 "company": f"{channel}",
-                "status" : int(f"{flag}"),
+                "status" : f"{flag}",
                 "date" : f"{current_date}",
             }
         }
@@ -192,8 +221,20 @@ if DayofWeek==2:
 
     while attempt < maxretries:
         try:
-            client.chat_postMessage(channel="C01RXTCMKLN", text=MessageToBeSent)
+            client.chat_postMessage(channel="C03T226TGBG", text=MessageToBeSent)
             pass
+        except http.client.IncompleteRead:
+            attempt += 1
+        else:
+            break
+
+    print(
+        "Fetched a total of {} messages from channel {}".format(
+            len(message_list),
+            CHANNEL,
+        )
+    )
+
         except http.client.IncompleteRead:
             attempt += 1
         else:
