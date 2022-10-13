@@ -63,10 +63,10 @@ def getTimeDifference(message_response, ts):
         temp = int(float(ts))
 
 if DayofWeek==4:
-    # client.chat_postMessage(channel="C01RXTCMKLN", text=ReminderMessage)
+    client.chat_postMessage(channel="C01RXTCMKLN", text=ReminderMessage)
     pass
 
-if DayofWeek==4:
+if DayofWeek==3:
     # gets channels that we need
     channel_ID_list = []
     channel_NAME_list = []
@@ -89,6 +89,8 @@ if DayofWeek==4:
     print(channel_NAME_list)
     MessageToBeSent = ""
     for channel in channel_NAME_list:
+        flag = 0
+        flag2 = 0
         message_list=[]
         print(channel_ID_list[i])
         response = client.conversations_history(
@@ -138,7 +140,8 @@ if DayofWeek==4:
         message_list = message_list+messages_all
 
         messages_needed = []
-        flag = 0
+        
+        numArr = []
         get_replies(messages_all,i)
         for message_dumpp in messages_all:
             # print(message_dumpp["text"])
@@ -146,10 +149,11 @@ if DayofWeek==4:
             # if (re.search(r"traffic.light:",one_message)):
             #     print("success")
             #     messages_needed.append("success")
-            #     break
-            numArr = []
-            if (re.search(r"traffic.light:.?(:large_green_circle:|:large_yellow_circle:|:red_circle:|🔴|🟢|🟡)\ntarget.spend.\(budget\):.?([+-]?([0-9]*[.])?[0-9]+)\nactual.spend:.?([+-]?([0-9]*[.])?[0-9]+)\ntarget.cpa:.?([+-]?([0-9]*[.])?[0-9]+)\nactual.cpa:.?([+-]?([0-9]*[.])?[0-9]+)\n",one_message)):
                 
+            
+            
+            if (re.search(r"traffic.light:.?(:large_green_circle:|:large_yellow_circle:|:red_circle:|🔴|🟢|🟡)\ntarget.spend.\(budget\):.?([+-]?([0-9]*[.])?[0-9]+)\nactual.spend:.?([+-]?([0-9]*[.])?[0-9]+)\ntarget.cpa:.?([+-]?([0-9]*[.])?[0-9]+)\nactual.cpa:.?([+-]?([0-9]*[.])?[0-9]+)\n",one_message)):
+                flag2  = 1
                 # print(one_message)
                 # print("success")
                 messages_needed.append("success")
@@ -169,25 +173,25 @@ if DayofWeek==4:
                 
                 print(numArr)
                 
-            # if (re.search(r"client.status.?.?.?:large_green_circle:",one_message)):
-            #     # print(re.search(r"Hasura",message_dumpp["text"]))
-            #     messages_needed.append(message_dumpp["text"])
-            #     flag=1
-            #     break
-            # elif (re.search(r"client.status.?.?.?:large_yellow_circle:",one_message)):
-            #     # print(re.search(r"Hasura",message_dumpp["text"]))
-            #     messages_needed.append(message_dumpp["text"])
-            #     flag=2
-            #     break
-            # elif (re.search(r"client.status.?.?.?:red_circle:",one_message  )):
-            #     # print(re.search(r"Hasura",message_dumpp["text"]))
-            #     messages_needed.append(message_dumpp["text"])
-            #     flag=3
-            #     break
+            if (re.search(r"client.status.?.?.?:large_green_circle:",one_message)):
+                # print(re.search(r"Hasura",message_dumpp["text"]))
+                messages_needed.append(message_dumpp["text"])
+                flag=1
+                break
+            elif (re.search(r"client.status.?.?.?:large_yellow_circle:",one_message)):
+                # print(re.search(r"Hasura",message_dumpp["text"]))
+                messages_needed.append(message_dumpp["text"])
+                flag=2
+                break
+            elif (re.search(r"client.status.?.?.?:red_circle:",one_message  )):
+                # print(re.search(r"Hasura",message_dumpp["text"]))
+                messages_needed.append(message_dumpp["text"])
+                flag=3
+                break
 
             
-        print(flag)
-        print(messages_needed)
+        # print(flag)
+        # print(messages_needed)
         
         if flag==1:
             MessageToBeSent = MessageToBeSent+(f"{channel}: :large_green_circle:\n")
@@ -199,18 +203,43 @@ if DayofWeek==4:
         #updating to google sheet
         
         #updating to google sheet
-        sheet_endpoint = "YOUR API KEY"
-        sheet_inputs = {
-            "sheet1": {
-                "company": f"{channel}",
-                "status" : f"{flag}",
-                "date" : f"{current_date}",
+        try:
+            sheet_endpoint = "ENDPOINT 1"
+            sheet_inputs = {
+                "sheet1": {
+                    "company": f"{channel}",
+                    "status" : f"{flag}",
+                    "date" : f"{current_date}",
+                }
             }
-        }
-
-        sheet_response = requests.post(sheet_endpoint, json=sheet_inputs)
-
-        print(sheet_response.text)
+            sheet_response = requests.post(sheet_endpoint, json=sheet_inputs)
+        
+            print(sheet_response.text)
+        except:
+            print("error in sheet 1")
+        
+        
+        if flag2==1:
+            try:
+                sheet_endpoint2 = "ENDPOINT 2"
+                
+                # try:  
+                sheet_inputs2 = {
+                    "sheet2": {
+                        "tl": f"{numArr[0]}",
+                        "ts" : f"{numArr[1]}",
+                        "date" : f"{current_date}",
+                        "as" : f"{numArr[2]}",
+                        "tc" : f"{numArr[3]}",
+                        "ac" : f"{numArr[4]}",
+                        "acc" : f"{numArr[5]}",
+                    }
+                }
+                sheet_response2 = requests.post(sheet_endpoint2, json=sheet_inputs2)
+            except:
+                print("error in sheet 2")
+            
+       
         i=i+1
 
 
@@ -223,18 +252,6 @@ if DayofWeek==4:
         try:
             client.chat_postMessage(channel="C03T226TGBG", text=MessageToBeSent)
             pass
-        except http.client.IncompleteRead:
-            attempt += 1
-        else:
-            break
-
-    print(
-        "Fetched a total of {} messages from channel {}".format(
-            len(message_list),
-            CHANNEL,
-        )
-    )
-
         except http.client.IncompleteRead:
             attempt += 1
         else:
