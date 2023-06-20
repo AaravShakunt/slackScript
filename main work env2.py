@@ -29,16 +29,16 @@ MAX_MESSAGES = 1000
 averageReplyTime = float(0)
 numMessagesAverage= 0
 
-testerLinks = {}
-mainLinks = {}
+testerLinks = {"sheet3_endpoint": "https://api.sheety.co//sheet3","sheet_endpoint": "https://api.sheety.co//testSlack/sheet1","sheet_endpoint2": "https://api.sheety.co//testSlack/sheet2","channelM1":"","channelM2":""}
+mainLinks = {"sheet3_endpoint": "https://api.sheety.co//sheet3","sheet_endpoint": "https://api.sheety.co//weeklyClientReports/sheet1","sheet_endpoint2": "https://api.sheety.co//weeklyClientReports/sheet2","channelM1":"","channelM2":""}
 
 # mainLinks = []
 
 # init web client
-client = slack_sdk.WebClient()
+client = slack_sdk.WebClient(token='')
 
 
-ReminderMessage = "Hi team,\nThe bot will collect all the  client statuses tomorrow.\nMake sure every channel is updated with the client status by then.\n\nGuidelines:\n1. Should be in the main channel, NOT a thread.\n2. Should be in this format: 'Client Status: 🟢'"
+ReminderMessage = "Hi team,\nThe bot will collect all the  client statuses tomorrow.\nMake sure every channel is updated with the weekly messages by then."
 
 def get_replies(messages_all, i):
     for message_dumpp in messages_all:
@@ -69,10 +69,10 @@ def getTimeDifference(message_response, ts):
         temp = int(float(ts))
 
 if DayofWeek==4:
-    # client.chat_postMessage(channel="C01RXTCMKLN", text=ReminderMessage)
+    client.chat_postMessage(channel="C01RXTCMKLN", text=ReminderMessage)
     pass
 
-if DayofWeek==2:
+if DayofWeek==5:
     # gets channels that we need
     channel_ID_list = []
     channel_NAME_list = []
@@ -156,6 +156,8 @@ if DayofWeek==2:
         numArr = []
         numArr2 = []
         # numArr3=[{}]
+        # flagStatus=0
+        
         get_replies(messages_all,i)
         for message_dumpp in messages_all:
             if float(message_dumpp["ts"])<UNIXTime:
@@ -171,48 +173,90 @@ if DayofWeek==2:
                 # if (re.search(r"traffic.light:",one_message)):
                 #     print("success")
                 #     messages_needed.append("success")
+
+                pattern = r"^client status:\s+(:red_circle:|:large_yellow_circle:|:large_green_circle:)"
+
+
+                match = re.search(pattern, one_message)
+
+                match = re.search(pattern, one_message, re.MULTILINE)
+                statusDict={}
+                if match:
+                    print("Match found:", match.group(0))
+                    s=one_message
+                    statusDict = {}
+
+                    statusDict["client_status"] = s[s.find("client status:")+len("client status:"):s.find("target spend (budget):")].strip()
+                    statusDict["target_spend"] = s[s.find("target spend (budget):")+len("target spend (budget):"):s.find("actual spend:")].strip()
+                    statusDict["actual_spend"] = s[s.find("actual spend:")+len("actual spend:"):s.find("target cpa:")].strip()
+                    statusDict["target_cpa"] = s[s.find("target cpa:")+len("target cpa:"):s.find("actual cpa:")].strip()
+                    statusDict["actual_cpa"] = s[s.find("actual cpa:")+len("actual cpa:"):s.find("# week:")].strip()
+                    statusDict["week"] = s[s.find("# week:")+len("# week:"):s.find("# accounts:")].strip()
+                    statusDict["accounts"] = s[s.find("# accounts:")+len("# accounts:"):].strip()
+
+                    print(statusDict)
+                    flag2=1
+
+                    if (re.search(r":red_circle:",one_message)):
+                        # print(re.search(r"Hasura",message_dumpp["text"]))
+                        messages_needed.append(message_dumpp["text"])
+                        flag=1
+                        break
+                    elif (re.search(r":large_yellow_circle:",one_message)):
+                        # print(re.search(r"Hasura",message_dumpp["text"]))
+                        messages_needed.append(message_dumpp["text"])
+                        flag=2
+                        break
+                    elif (re.search(r":red_circle:",one_message  )):
+                        # print(re.search(r"Hasura",message_dumpp["text"]))
+                        messages_needed.append(message_dumpp["text"])
+                        flag=3
+                        break
+                    break
+                                
                 
-                
-                
-                if (re.search(r"traffic.light:.?(:large_green_circle:|:large_yellow_circle:|:red_circle:|🔴|🟢|🟡)\ntarget.spend.\(budget\):.?([+-]?([0-9]*[.])?[0-9]+)\nactual.spend:.?([+-]?([0-9]*[.])?[0-9]+)\ntarget.cpa:.?([+-]?([0-9]*[.])?[0-9]+)\nactual.cpa:.?([+-]?([0-9]*[.])?[0-9]+)",one_message)):
-                    flag2  = 1
+                # LAST WORKING VERSION
+                # if (re.search(r"traffic.light:.?(:large_green_circle:|:large_yellow_circle:|:red_circle:|🔴|🟢|🟡)\ntarget.spend.\(budget\):.?([+-]?([0-9]*[.])?[0-9]+)\nactual.spend:.?([+-]?([0-9]*[.])?[0-9]+)\ntarget.cpa:.?([+-]?([0-9]*[.])?[0-9]+)\nactual.cpa:.?([+-]?([0-9]*[.])?[0-9]+)",one_message)):
+                #     flag2  = 1
                     
-                    # print(one_message)
-                    # print("success")
-                    messages_needed.append("success")
-                    regexTrafficLight = '[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+'
-                    if (":red_circle:" in one_message):
-                        numArr.append(":red_circle:")
-                    elif (":large_yellow_circle:" in one_message):
-                        numArr.append(":large_yellow_circle:")
-                    elif (":red_circle:" in one_message):
-                        numArr.append(":red_circle:")
-                    else:
-                        numArr.append("No status found")
-                    if re.search(regexTrafficLight, one_message) is not None:
-                        for catch in re.finditer(regexTrafficLight, one_message):
-                            # print(catch[0])
-                            numArr.append(catch[0])
-                    numArr.append(channel)
-                    # print("Hello\n")
-                    # print(numArr)
-                    # print("Hello\n")
+                #     # print(one_message)
+                #     # print("success")
+                #     messages_needed.append("success")
+                #     regexTrafficLight = '[\d]+[.,\d]+|[\d]*[.][\d]+|[\d]+'
+                #     if (":red_circle:" in one_message):
+                #         numArr.append(":red_circle:")
+                #     elif (":large_yellow_circle:" in one_message):
+                #         numArr.append(":large_yellow_circle:")
+                #     elif (":red_circle:" in one_message):
+                #         numArr.append(":red_circle:")
+                #     else:
+                #         numArr.append("No status found")
+                #     if re.search(regexTrafficLight, one_message) is not None:
+                #         for catch in re.finditer(regexTrafficLight, one_message):
+                #             # print(catch[0])
+                #             numArr.append(catch[0])
+                #     numArr.append(channel)
+                #     # print("Hello\n")
+                #     # print(numArr)
+                #     # print("Hello\n")
                     
-                if (re.search(r"traffic.light:.?:large_green_circle:",one_message)):
-                    # print(re.search(r"Hasura",message_dumpp["text"]))
-                    messages_needed.append(message_dumpp["text"])
-                    flag=1
-                    break
-                elif (re.search(r"traffic.light:.?:large_yellow_circle:",one_message)):
-                    # print(re.search(r"Hasura",message_dumpp["text"]))
-                    messages_needed.append(message_dumpp["text"])
-                    flag=2
-                    break
-                elif (re.search(r"traffic.light:.?:red_circle:",one_message  )):
-                    # print(re.search(r"Hasura",message_dumpp["text"]))
-                    messages_needed.append(message_dumpp["text"])
-                    flag=3
-                    break
+                # if (re.search(r"traffic.light:.?:large_green_circle:",one_message)):
+                #     # print(re.search(r"Hasura",message_dumpp["text"]))
+                #     messages_needed.append(message_dumpp["text"])
+                #     flag=1
+                #     break
+                # elif (re.search(r"traffic.light:.?:large_yellow_circle:",one_message)):
+                #     # print(re.search(r"Hasura",message_dumpp["text"]))
+                #     messages_needed.append(message_dumpp["text"])
+                #     flag=2
+                #     break
+                # elif (re.search(r"traffic.light:.?:red_circle:",one_message  )):
+                #     # print(re.search(r"Hasura",message_dumpp["text"]))
+                #     messages_needed.append(message_dumpp["text"])
+                #     flag=3
+                #     break
+
+                #LAST WORKING VERSION END
         
         #For second message:
         sprintDict={}
@@ -299,6 +343,8 @@ if DayofWeek==2:
             MessageToBeSent = MessageToBeSent+(f"{channel}: :large_yellow_circle:\n")
         if flag==3:
             MessageToBeSent = MessageToBeSent+(f"{channel}: :red_circle:\n")
+
+        
         
         #updating to google sheet
         for sprintOutput in numArr2:
@@ -347,18 +393,18 @@ if DayofWeek==2:
         if flag2==1:
             try:
                 
-                
+                # print("HIHOHOOHO[POFKHRPOJYHREKNHREOHKNERAPGAIOERNGAEKNGAERJGNDOGNDODRNHDRPINYRIYNY]\n")
                 # try:  
                 sheet_inputs2 = {
                     "sheet2": {
-                        "channel": f"{numArr[6]}",
-                        "tl": f"{numArr[0]}",
-                        "ts" : f"{numArr[1]}",
+                        "channel": f"{channel}",
+                        "tl": f"{statusDict['client_status']}",
+                        "ts" : f"{statusDict['target_spend']}",
                         "date" : f"{current_date}",
-                        "as" : f"{numArr[2]}",
-                        "tc" : f"{numArr[3]}",
-                        "ac" : f"{numArr[4]}",
-                        "acc" : f"{numArr[5]}",
+                        "as" : f"{statusDict['actual_spend']}",
+                        "tc" : f"{statusDict['target_cpa']}",
+                        "ac" : f"{statusDict['actual_cpa']}",
+                        "acc" : f"{statusDict['accounts']}",
                     }
                 }
                 sheet_response2 = requests.post(mainLinks["sheet_endpoint2"], json=sheet_inputs2)
